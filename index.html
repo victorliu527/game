@@ -3,81 +3,105 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>数学蛇：全屏竞技版</title>
+    <title>数学蛇：iPad 适配版</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { touch-action: manipulation; -webkit-user-select: none; overflow: hidden; background: #f8fafc; font-family: 'PingFang SC', sans-serif; height: 100vh; display: flex; flex-direction: column; }
+        body { touch-action: manipulation; -webkit-user-select: none; overflow: hidden; background: #f1f5f9; font-family: 'PingFang SC', sans-serif; height: 100vh; margin: 0; padding: 0; }
         
-        /* 自适应游戏区：自动撑满剩余空间 */
-        #game-container { flex: 1; width: 100%; padding: 10px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; min-height: 0; }
-        
+        /* 全屏 Flex 布局 */
+        #main-layout { display: flex; width: 100vw; height: 100vh; padding: 20px; box-sizing: border-box; gap: 20px; }
+
+        /* 游戏核心区：自适应剩余空间 */
+        #game-container { flex: 1; height: 100%; display: flex; align-items: center; justify-content: center; }
         #game-area { 
-            position: relative; width: 100%; height: 100%; background-color: #f1f5f9;
-            background-image: linear-gradient(#e2e8f0 1px, transparent 1px), linear-gradient(90deg, #e2e8f0 1px, transparent 1px);
-            /* background-size 会在 JS 中动态设置以匹配步长 */
-            border-radius: 16px; overflow: hidden; border: 3px solid #cbd5e1; box-shadow: inset 0 2px 10px rgba(0,0,0,0.05);
+            position: relative; width: 100%; height: 100%; background: #ffffff;
+            background-image: linear-gradient(#f1f5f9 1px, transparent 1px), linear-gradient(90deg, #f1f5f9 1px, transparent 1px);
+            border-radius: 24px; overflow: hidden; border: 4px solid #e2e8f0; box-shadow: 0 10px 25px rgba(0,0,0,0.05);
         }
 
-        .snake-dot { position: absolute; border-radius: 4px; transition: all 0.1s linear; z-index: 10; }
-        .snake-head { z-index: 11; border: 2px solid white; box-shadow: 0 0 5px rgba(0,0,0,0.2); }
-        
-        /* 移除闪烁动画，让两个数字看起来完全一样 */
-        .number-food { 
-            position: absolute; display: flex; align-items: center; justify-content: center; 
-            font-size: 1.5rem; font-weight: 900; z-index: 5; color: #4f46e5;
-            text-shadow: 1px 1px 0px white;
+        /* 侧边控制面板 */
+        .side-panel { width: 220px; display: flex; flex-direction: column; gap: 15px; justify-content: center; }
+
+        /* 按钮样式：加大尺寸方便 iPad 点击 */
+        .ctrl-btn { 
+            background: #6366f1; color: white; font-size: 2.5rem; padding: 25px 0; border-radius: 20px; 
+            shadow: 0 6px 0 #4338ca; transition: all 0.1s; display: flex; align-items: center; justify-content: center;
         }
+        .ctrl-btn:active { transform: translateY(4px); box-shadow: 0 2px 0 #4338ca; }
+
+        /* 蛇和食物 */
+        .snake-dot { position: absolute; border-radius: 6px; z-index: 10; transition: all 0.1s linear; }
+        .snake-head { z-index: 11; border: 3px solid white; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        .number-food { position: absolute; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; font-weight: 900; z-index: 5; color: #1e293b; }
 
         .shake { animation: shake-anim 0.4s both; background-color: #fee2e2 !important; }
         @keyframes shake-anim { 10%, 90% { transform: translate3d(-3px, 0, 0); } 30%, 70% { transform: translate3d(-5px, 0, 0); } }
 
-        /* 横屏适配 */
-        @media (orientation: landscape) {
-            body { flex-direction: row; padding: 10px; gap: 15px; }
-            #side-panel { width: 250px; height: 100%; flex-direction: column; display: flex; justify-content: space-between; }
-            #game-container { height: 100%; }
+        /* 手机竖屏兼容 */
+        @media (orientation: portrait) {
+            #main-layout { flex-direction: column; padding: 10px; }
+            .side-panel { width: 100%; order: 2; flex-direction: row; flex-wrap: wrap; height: auto; }
+            #game-container { order: 1; flex: 1.5; }
         }
     </style>
 </head>
-<body class="p-2">
+<body>
 
-    <div id="side-panel" class="flex flex-col gap-2">
-        <div class="flex justify-between items-center bg-white p-3 rounded-2xl shadow-sm border border-slate-100">
-            <div class="text-center"><p class="text-[10px] text-gray-400 font-bold uppercase">Best</p><p id="high-score" class="font-bold text-orange-500">0</p></div>
-            <button onclick="togglePause()" class="bg-slate-100 px-4 py-2 rounded-xl font-bold text-slate-600 active:scale-95">⏸</button>
-            <div class="text-center"><p class="text-[10px] text-gray-400 font-bold uppercase">Score</p><p id="score" class="font-bold text-sky-600">0</p></div>
-        </div>
-
-        <div id="q-card" class="bg-white p-4 rounded-2xl shadow-lg border-2 border-indigo-100 text-center transition-all">
-            <div id="question" class="text-4xl font-black text-slate-800 tracking-tighter">? + ?</div>
-        </div>
-
-        <div class="grid grid-cols-3 gap-2">
-            <div class="flex flex-col items-center justify-center bg-white rounded-xl border p-1">
-                <span class="text-[10px] font-bold text-indigo-400"><b id="rv">10</b></span>
-                <input type="range" id="diff" min="10" max="30" value="10" class="w-full h-1 accent-indigo-500" oninput="updateDifficulty(this.value)">
+    <div id="main-layout">
+        
+        <div class="side-panel">
+            <div class="grid grid-cols-3 gap-3">
+                <div></div>
+                <button onclick="changeDir('up')" class="ctrl-btn col-span-1">⬆️</button>
+                <div></div>
+                
+                <button onclick="changeDir('left')" class="ctrl-btn">⬅️</button>
+                <button onclick="changeDir('down')" class="ctrl-btn">⬇️</button>
+                <button onclick="changeDir('right')" class="ctrl-btn">➡️</button>
             </div>
-            <button onclick="changeDir('up')" class="bg-indigo-500 text-white text-2xl p-4 rounded-xl shadow-[0_4px_0_#4338ca] active:translate-y-1 active:shadow-none">⬆️</button>
-            <div class="flex items-center justify-center text-2xl" id="level-emoji">🐣</div>
-            <button onclick="changeDir('left')" class="bg-indigo-500 text-white text-2xl p-4 rounded-xl shadow-[0_4px_0_#4338ca] active:translate-y-1 active:shadow-none">⬅️</button>
-            <button onclick="changeDir('down')" class="bg-indigo-500 text-white text-2xl p-4 rounded-xl shadow-[0_4px_0_#4338ca] active:translate-y-1 active:shadow-none">⬇️</button>
-            <button onclick="changeDir('right')" class="bg-indigo-500 text-white text-2xl p-4 rounded-xl shadow-[0_4px_0_#4338ca] active:translate-y-1 active:shadow-none">➡️</button>
-        </div>
-    </div>
-
-    <div id="game-container">
-        <div id="game-area">
-            <div id="pause-overlay" class="hidden absolute inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm">
-                <button onclick="togglePause()" class="bg-white text-indigo-600 px-10 py-4 rounded-3xl text-2xl font-black shadow-2xl">继续游戏 ▶️</button>
+            
+            <div class="bg-white p-4 rounded-3xl border-2 border-slate-100 mt-4">
+                <p class="text-center text-xs font-bold text-slate-400 mb-2 italic">难度范围: <b id="rv" class="text-indigo-600">10</b></p>
+                <input type="range" id="diff" min="10" max="50" value="10" class="w-full h-2 accent-indigo-500" oninput="updateDifficulty(this.value)">
             </div>
         </div>
+
+        <div id="game-container">
+            <div id="game-area">
+                <div id="pause-overlay" class="hidden absolute inset-0 z-50 flex flex-col items-center justify-center bg-slate-900/60 backdrop-blur-md text-white">
+                    <p class="text-2xl mb-8 font-black">GAME PAUSED</p>
+                    <button onclick="togglePause()" class="bg-white text-indigo-600 px-12 py-5 rounded-full text-3xl font-black shadow-2xl active:scale-95">CONTINUE ▶️</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="side-panel">
+            <div class="bg-white p-6 rounded-[32px] shadow-lg border-4 border-indigo-500 text-center">
+                <p class="text-slate-400 text-sm font-bold">SOLVE THIS</p>
+                <div id="question" class="text-5xl font-black text-slate-800 my-2">? + ?</div>
+            </div>
+
+            <div class="flex justify-between gap-3">
+                <div class="flex-1 bg-white p-4 rounded-2xl text-center border">
+                    <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Score</p>
+                    <p id="score" class="text-3xl font-black text-sky-500">0</p>
+                </div>
+                <div class="flex-1 bg-white p-4 rounded-2xl text-center border">
+                    <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Best</p>
+                    <p id="high-score" class="text-3xl font-black text-orange-500">0</p>
+                </div>
+            </div>
+
+            <button onclick="togglePause()" class="bg-slate-800 text-white py-4 rounded-2xl font-bold text-xl active:bg-slate-700">⏸ 暂停游戏</button>
+        </div>
+
     </div>
 
     <script>
         const AREA = document.getElementById('game-area');
-        let STEP = 30; // 默认步长，会在 init 中动态计算
+        let STEP = 40; // iPad 上网格稍微大一点
         let snakeDots = [];
-        const COLORS = ['#38bdf8', '#4ade80', '#fbbf24', '#a78bfa', '#f87171'];
+        const COLORS = ['#38bdf8', '#4ade80', '#fbbf24', '#a78bfa', '#f43f5e'];
         let direction = 'right', score = 0, currentAns = 0, foods = [], gameInterval, isPaused = false;
         let highScore = localStorage.getItem('snakeMathHigh') || 0;
 
@@ -92,21 +116,16 @@
             o.start(); o.stop(audioCtx.currentTime + dur);
         }
 
-        // --- 响应式网格初始化 ---
         function initGrid() {
-            const containerWidth = AREA.offsetWidth;
-            const containerHeight = AREA.offsetHeight;
-            // 动态计算步长：寻找能被宽高整除的最接近 30 的数值
-            STEP = Math.floor(containerWidth / 15); // 横向固定 15 格
+            // 根据高度动态调整步长，确保纵向格子数在 10-12 左右，适合口算
+            STEP = Math.floor(AREA.offsetHeight / 10);
             AREA.style.backgroundSize = `${STEP}px ${STEP}px`;
-            
-            // 重新校准蛇的位置
-            snakeDots = [{x: STEP * 2, y: STEP * 2}];
+            if (snakeDots.length === 0) snakeDots = [{x: STEP*2, y: STEP*2}];
             render();
         }
 
         function saveGameState() {
-            const state = { snakeDots, direction, score, currentAns, foods, diff: document.getElementById('diff').value };
+            const state = { snakeDots, direction, score, currentAns, foods, diff: document.getElementById('diff').value, question: document.getElementById('question').innerText };
             localStorage.setItem('snakeMathState', JSON.stringify(state));
         }
 
@@ -118,8 +137,8 @@
                 currentAns = s.currentAns; foods = s.foods;
                 document.getElementById('diff').value = s.diff;
                 document.getElementById('rv').innerText = s.diff;
+                document.getElementById('question').innerText = s.question;
                 document.getElementById('score').innerText = score;
-                render(); renderFoods(); updateLevelEmoji();
                 return true;
             }
             return false;
@@ -131,8 +150,7 @@
         function togglePause(forcePause = false) {
             if(forcePause) isPaused = true; else isPaused = !isPaused;
             document.getElementById('pause-overlay').classList.toggle('hidden', !isPaused);
-            if(!isPaused) audioCtx.resume();
-            saveGameState();
+            if(!isPaused) { audioCtx.resume(); saveGameState(); }
         }
 
         function updateDifficulty(v) { document.getElementById('rv').innerText = v; resetGame(); }
@@ -141,6 +159,7 @@
             clearInterval(gameInterval);
             score = 0; document.getElementById('score').innerText = 0;
             initGrid();
+            snakeDots = [{x: STEP*2, y: STEP*2}];
             direction = 'right';
             nextQuestion();
             gameInterval = setInterval(update, 450);
@@ -192,11 +211,10 @@
             snakeDots.unshift(head);
             let ate = false;
             foods.forEach(f => {
-                if(Math.abs(head.x - f.x) < 2 && Math.abs(head.y - f.y) < 2) {
+                if(Math.abs(head.x - f.x) < 5 && Math.abs(head.y - f.y) < 5) {
                     if(f.ok) {
-                        score++; playTone(800, 'sine', 0.2);
+                        score++; playTone(800, 'sine', 0.15);
                         document.getElementById('score').innerText = score;
-                        if(score % 10 === 0) levelUpFlash();
                         if(score > highScore) {
                             highScore = score;
                             localStorage.setItem('snakeMathHigh', highScore);
@@ -212,10 +230,8 @@
             });
             if(!ate) snakeDots.pop();
             render();
+            if(score % 5 === 0) saveGameState();
         }
-
-        function updateLevelEmoji() { document.getElementById('level-emoji').innerText = score >= 30 ? '👑' : (score >= 10 ? '🦖' : '🐣'); }
-        function levelUpFlash() { document.getElementById('q-card').style.backgroundColor = '#fef08a'; updateLevelEmoji(); setTimeout(() => document.getElementById('q-card').style.backgroundColor = 'white', 500); }
 
         function render() {
             AREA.querySelectorAll('.snake-dot').forEach(el => el.remove());
@@ -223,9 +239,9 @@
             snakeDots.forEach((d, i) => {
                 const dot = document.createElement('div');
                 dot.className = `snake-dot ${i===0?'snake-head':''}`;
-                dot.style.width = (STEP - 2) + 'px'; dot.style.height = (STEP - 2) + 'px';
-                dot.style.left = (d.x + 1) + 'px'; dot.style.top = (d.y + 1) + 'px';
-                dot.style.backgroundColor = i === 0 ? '#0284c7' : COLORS[colorIdx];
+                dot.style.width = (STEP - 4) + 'px'; dot.style.height = (STEP - 4) + 'px';
+                dot.style.left = (d.x + 2) + 'px'; dot.style.top = (d.y + 2) + 'px';
+                dot.style.backgroundColor = i === 0 ? '#1e293b' : COLORS[colorIdx];
                 AREA.appendChild(dot);
             });
             document.getElementById('high-score').innerText = highScore;
@@ -243,11 +259,17 @@
             });
         }
 
-        function changeDir(d) { if(!isPaused) { if(d === direction) update(); else { direction = d; playTone(400, 'square', 0.05); } saveGameState(); } }
+        function changeDir(d) { 
+            if(!isPaused) { 
+                if(d === direction) update(); 
+                else { direction = d; playTone(400, 'square', 0.05); } 
+            } 
+        }
 
-        setTimeout(() => { // 延迟初始化以确保 DOM 尺寸就绪
+        // 延迟启动
+        setTimeout(() => {
             if(!loadGameState()) resetGame();
-            else { togglePause(true); initGrid(); gameInterval = setInterval(update, 450); }
+            else { initGrid(); togglePause(true); gameInterval = setInterval(update, 450); }
         }, 300);
     </script>
 </body>
