@@ -3,175 +3,162 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>数字贪吃蛇</title>
+    <title>数字贪吃蛇 (环绕版)</title>
     <link rel="manifest" href="data:application/manifest+json,{"name":"数字贪吃蛇","short_name":"数学蛇","start_url":".","display":"standalone","background_color":"#f0f9ff","theme_color":"#6366f1"}">
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { touch-action: manipulation; -webkit-user-select: none; overflow: hidden; background: #f0f9ff; font-family: 'PingFang SC', sans-serif; }
         .food { animation: pulse 1s infinite; }
         @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
-        #game-area { position: relative; width: 100%; height: 60vh; background: #e0f2fe; border-radius: 20px; overflow: hidden; border: 4px solid #7dd3fc; }
-        .snake-dot { position: absolute; width: 20px; height: 20px; background: #38bdf8; border-radius: 6px; transition: all 0.1s linear; }
-        .snake-head { background: #0284c7; }
-        .number-food { position: absolute; font-size: 2rem; font-weight: 900; color: #6366f1; transform: translate(-50%, -50%); transition: all 0.2s; }
-        .msg-pop { animation: msgPop 0.5s ease; }
-        @keyframes msgPop { 0% { opacity: 0; transform: translateY(20px); } 100% { opacity: 1; transform: translateY(0); } }
+        #game-area { position: relative; width: 100%; height: 55vh; background: #e0f2fe; border-radius: 24px; overflow: hidden; border: 4px solid #7dd3fc; }
+        .snake-dot { position: absolute; width: 22px; height: 22px; background: #38bdf8; border-radius: 6px; transition: all 0.1s linear; }
+        .snake-head { background: #0284c7; z-index: 10; }
+        .number-food { position: absolute; font-size: 2.2rem; font-weight: 900; color: #6366f1; transform: translate(-50%, -50%); z-index: 5; }
     </style>
 </head>
 <body class="p-4 flex flex-col items-center">
 
     <details class="w-full max-w-sm bg-white rounded-2xl shadow-sm mb-4">
-        <summary class="p-3 bg-indigo-50 text-indigo-700 font-bold cursor-pointer text-center">⚙️ 难度设置</summary>
-        <div class="p-4 space-y-3">
-            <div>
-                <label class="block text-xs text-gray-500 mb-1">数字范围: <span id="r-val" class="font-bold text-indigo-600">10</span></label>
-                <input type="range" id="diff" min="5" max="30" value="10" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-500">
-            </div>
+        <summary class="p-3 bg-indigo-50 text-indigo-700 font-bold cursor-pointer text-center">⚙️ 设置难度 (10-30)</summary>
+        <div class="p-4 space-y-3 text-center">
+            <input type="range" id="diff" min="10" max="30" value="10" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-500">
+            <div class="text-indigo-600 font-bold">当前范围: <span id="r-val">10</span> 以内</div>
         </div>
     </details>
 
-    <div id="game-area" class="mb-4">
-        </div>
+    <div id="game-area"></div>
 
-    <div class="w-full max-w-sm flex items-center justify-between bg-white p-4 rounded-3xl shadow-lg border-2 border-indigo-100 mb-4">
-        <div id="question" class="text-5xl font-black text-slate-800 tracking-tighter">? + ?</div>
-        <div class="text-center">
-            <div class="text-3xl font-bold text-sky-600" id="score">0</div>
-            <div class="text-xs text-gray-400">得分</div>
+    <div class="w-full max-w-sm flex items-center justify-between bg-white p-4 rounded-3xl shadow-xl border-2 border-indigo-100 mt-4 mb-4">
+        <div id="question" class="text-5xl font-black text-slate-800">? + ?</div>
+        <div class="text-right">
+            <div class="text-xs text-gray-400">最高记录</div>
+            <div class="text-2xl font-bold text-orange-500" id="high-score">0</div>
         </div>
     </div>
 
     <div class="w-full max-w-sm grid grid-cols-3 gap-3">
         <div></div>
-        <button onclick="changeDir('up')" class="bg-indigo-400 text-white text-3xl p-5 rounded-2xl shadow-md active:scale-95 transition">⬆️</button>
+        <button onclick="changeDir('up')" class="bg-indigo-500 text-white text-3xl p-5 rounded-2xl shadow-lg active:translate-y-1 transition-all">⬆️</button>
         <div></div>
-        <button onclick="changeDir('left')" class="bg-indigo-400 text-white text-3xl p-5 rounded-2xl shadow-md active:scale-95 transition">⬅️</button>
-        <button onclick="changeDir('down')" class="bg-indigo-400 text-white text-3xl p-5 rounded-2xl shadow-md active:scale-95 transition">⬇️</button>
-        <button onclick="changeDir('right')" class="bg-indigo-400 text-white text-3xl p-5 rounded-2xl shadow-md active:scale-95 transition">➡️</button>
+        <button onclick="changeDir('left')" class="bg-indigo-500 text-white text-3xl p-5 rounded-2xl shadow-lg active:translate-y-1 transition-all">⬅️</button>
+        <button onclick="changeDir('down')" class="bg-indigo-500 text-white text-3xl p-5 rounded-2xl shadow-lg active:translate-y-1 transition-all">⬇️</button>
+        <button onclick="changeDir('right')" class="bg-indigo-500 text-white text-3xl p-5 rounded-2xl shadow-lg active:translate-y-1 transition-all">➡️</button>
     </div>
 
-    <div id="msg" class="absolute bottom-16 left-1/2 -translate-x-1/2 text-2xl font-bold text-emerald-500 opacity-0 transition-opacity"></div>
-
     <script>
-        const AREA_W = document.getElementById('game-area').offsetWidth;
-        const AREA_H = document.getElementById('game-area').offsetHeight;
-        const STEP = 22; // 蛇移动步长
-        const snakeDots = [{x: 100, y: 100}]; // 蛇身体
-        let direction = 'right';
-        let score = 0;
-        let currentAns = 0;
-        let foods = [];
-        let gameActive = true;
-        let gameInterval;
+        const AREA = document.getElementById('game-area');
+        const AREA_W = AREA.offsetWidth;
+        const AREA_H = AREA.offsetHeight;
+        const STEP = 24; 
+        const snakeDots = [{x: 100, y: 100}];
+        let direction = 'right', score = 0, currentAns = 0, foods = [], gameInterval;
 
-        // 初始化
-        document.getElementById('diff').oninput = function() { document.getElementById('r-val').innerText = this.value; resetGame(); };
-        resetGame();
+        // 读取本地最高分
+        let highScore = localStorage.getItem('snakeMathHigh') || 0;
+        document.getElementById('high-score').innerText = highScore;
+
+        document.getElementById('diff').oninput = function() { 
+            document.getElementById('r-val').innerText = this.value; 
+            resetGame(); 
+        };
 
         function resetGame() {
             clearInterval(gameInterval);
-            score = 0;
-            document.getElementById('score').innerText = score;
-            snakeDots.length = 1; snakeDots[0] = {x: 100, y: 100};
+            score = 0; snakeDots.length = 1; snakeDots[0] = {x: 100, y: 100};
             direction = 'right';
-            gameActive = true;
             nextQuestion();
-            draw();
-            gameInterval = setInterval(update, 300); // 移动速度（毫秒）
+            gameInterval = setInterval(update, 350); // 给娃留出一点反应时间
         }
 
         function nextQuestion() {
             const max = parseInt(document.getElementById('diff').value);
-            const a = Math.floor(Math.random() * max) + 1;
-            const b = Math.floor(Math.random() * max) + 1;
-            
-            // 确保难度可控：结果不超过 max
-            if(a+b <= max) { currentAns = a+b; document.getElementById('question').innerText = `${a} + ${b}`; }
-            else { currentAns = Math.abs(a-b); document.getElementById('question').innerText = `${Math.max(a,b)} - ${Math.min(a,b)}`; }
-
-            // 生成食物坐标
-            let wrong = currentAns + (Math.random() > 0.5 ? 2 : -2);
-            if(wrong<0) wrong = currentAns + 3;
-            foods = [
-                {val: currentAns, x: Math.random() * (AREA_W-40) + 20, y: Math.random() * (AREA_H-40) + 20, isCorrect: true},
-                {val: wrong, x: Math.random() * (AREA_W-40) + 20, y: Math.random() * (AREA_H-40) + 20, isCorrect: false}
-            ];
-            drawFoods();
+            const isAdd = Math.random() > 0.5;
+            if(isAdd) {
+                currentAns = Math.floor(Math.random() * (max - 2)) + 2;
+                let a = Math.floor(Math.random() * (currentAns - 1)) + 1;
+                document.getElementById('question').innerText = `${a} + ${currentAns - a}`;
+            } else {
+                let a = Math.floor(Math.random() * (max - 5)) + 5;
+                let b = Math.floor(Math.random() * (a - 1)) + 1;
+                currentAns = a - b;
+                document.getElementById('question').innerText = `${a} - ${b}`;
+            }
+            spawnFoods();
         }
 
-        function drawFoods() {
-            const area = document.getElementById('game-area');
-            area.querySelectorAll('.number-food').forEach(el => el.remove());
-            foods.forEach((f, idx) => {
-                const el = document.createElement('div');
-                el.className = `number-food ${f.isCorrect?'food':''}`;
-                el.innerText = f.val;
-                el.style.left = f.x + 'px'; el.style.top = f.y + 'px';
-                area.appendChild(el);
-            });
+        function spawnFoods() {
+            let wrong = currentAns + (Math.random() > 0.5 ? 2 : -2);
+            if(wrong < 0 || wrong === currentAns) wrong = currentAns + 1;
+            foods = [
+                {val: currentAns, x: Math.random()*(AREA_W-60)+30, y: Math.random()*(AREA_H-60)+30, ok: true},
+                {val: wrong, x: Math.random()*(AREA_W-60)+30, y: Math.random()*(AREA_H-60)+30, ok: false}
+            ];
+            renderFoods();
         }
 
         function update() {
-            if(!gameActive) return;
-            // 蛇头移动
             const head = {...snakeDots[0]};
             if(direction === 'up') head.y -= STEP;
             else if(direction === 'down') head.y += STEP;
             else if(direction === 'left') head.x -= STEP;
             else if(direction === 'right') head.x += STEP;
 
-            // 撞墙检测
-            if(head.x<0 || head.x>AREA_W-20 || head.y<0 || head.y>AREA_H-20) { gameOver(); return; }
-            
-            // 移动身体
-            snakeDots.unshift(head); snakeDots.pop();
+            // --- 核心修改：坐标环绕 (Wrapping) ---
+            if (head.x < 0) head.x = AREA_W - STEP;
+            else if (head.x >= AREA_W) head.x = 0;
+            if (head.y < 0) head.y = AREA_H - STEP;
+            else if (head.y >= AREA_H) head.y = 0;
 
-            // 碰撞食物检测
-            foods.forEach((f, idx) => {
-                const dx = head.x - f.x + 10, dy = head.y - f.y + 10;
-                if(Math.sqrt(dx*dx + dy*dy) < 25) { // 碰到食物
-                    if(f.isCorrect) { eatCorrect(); } 
-                    else { eatWrong(); }
+            snakeDots.unshift(head);
+            
+            let ate = false;
+            foods.forEach(f => {
+                const dist = Math.hypot(head.x + 10 - f.x, head.y + 10 - f.y);
+                if(dist < 30) {
+                    if(f.ok) {
+                        score++;
+                        if(score > highScore) {
+                            highScore = score;
+                            localStorage.setItem('snakeMathHigh', highScore);
+                            document.getElementById('high-score').innerText = highScore;
+                        }
+                        ate = true;
+                        nextQuestion();
+                    } else {
+                        // 选错的小惩罚：蛇稍微缩短一点（如果长度大于1）
+                        if(snakeDots.length > 2) snakeDots.pop();
+                        spawnFoods(); 
+                    }
                 }
             });
-            draw();
+
+            if(!ate) snakeDots.pop();
+            render();
         }
 
-        function eatCorrect() {
-            score++; document.getElementById('score').innerText = score;
-            snakeDots.push({...snakeDots[snakeDots.length-1]}); // 蛇变长
-            
-            showMsg("吃对了！太棒了 🍎");
-            nextQuestion();
-        }
-
-        function eatWrong() {
-            const head = document.querySelector('.snake-head');
-            head.classList.add('bg-orange-500', 'animate-pulse');
-            showMsg("那个不能吃哦... 🧐");
-            setTimeout(()=>head.classList.remove('bg-orange-500', 'animate-pulse'), 500);
-            nextQuestion(); // 刷新题目和食物，防止卡死
-        }
-
-        function gameOver() { clearInterval(gameInterval); gameActive=false; alert("出界啦！最终得分: "+score); resetGame(); }
-        function changeDir(dir) { direction = dir; }
-
-        function draw() {
-            const area = document.getElementById('game-area');
-            area.querySelectorAll('.snake-dot').forEach(el => el.remove());
-            snakeDots.forEach((d, idx) => {
-                const el = document.createElement('div');
-                el.className = `snake-dot ${idx===0?'snake-head':''}`;
-                el.style.left = d.x + 'px'; el.style.top = d.y + 'px';
-                area.appendChild(el);
+        function render() {
+            AREA.querySelectorAll('.snake-dot').forEach(el => el.remove());
+            snakeDots.forEach((d, i) => {
+                const dot = document.createElement('div');
+                dot.className = `snake-dot ${i===0?'snake-head':''}`;
+                dot.style.left = d.x + 'px'; dot.style.top = d.y + 'px';
+                AREA.appendChild(dot);
             });
         }
 
-        function showMsg(txt) {
-            const msg = document.getElementById('msg'); msg.innerText = txt;
-            msg.className = "absolute bottom-16 left-1/2 -translate-x-1/2 text-2xl font-bold text-emerald-500 opacity-100 msg-pop";
-            setTimeout(()=>msg.className="transition-opacity opacity-0", 800);
+        function renderFoods() {
+            AREA.querySelectorAll('.number-food').forEach(el => el.remove());
+            foods.forEach(f => {
+                const el = document.createElement('div');
+                el.className = "number-food " + (f.ok?'food':'');
+                el.innerText = f.val;
+                el.style.left = f.x + 'px'; el.style.top = f.y + 'px';
+                AREA.appendChild(el);
+            });
         }
+
+        function changeDir(d) { direction = d; }
+        resetGame();
     </script>
 </body>
 </html>
